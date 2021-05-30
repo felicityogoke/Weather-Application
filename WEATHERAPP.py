@@ -3,16 +3,17 @@ from tkinter import *
 import tkinter as tk
 import requests
 
+'''Basic Tkinter Setup'''
 root = Tk()
-root.geometry("400x400")
-root.configure(bg='cadetblue1')
-root.resizable(False, False)
 a = ("Comic Sans MS", 15, "bold")
 b = ("Comic Sans MS", 20, "bold")
+root.geometry("430x430")
+root.configure(bg='cadetblue1')
+root.resizable(False, False)
+
 
 
 class FirstPage(tk.Frame):
-
     def __init__(self, master, word=None):
         super().__init__(master, word=None)
         self.word = word
@@ -26,6 +27,7 @@ class FirstPage(tk.Frame):
         self.label1.grid(row=2, column=0, sticky='ns', pady=0)
         self.label2.grid(row=3, column=0, sticky='ns', pady=0)
 
+
         if self.word != None:
             self.loc_entry.delete(0, "end")
             self.loc_entry.insert(0, self.word)
@@ -37,43 +39,67 @@ class FirstPage(tk.Frame):
         self.label1 = tk.Label(root, bg='cadetblue1', font=b)
         self.label2 = tk.Label(root, bg='cadetblue1', font=a)
 
-    def add(self):
-        self.location = self.loc_entry.get()
-        api = "https://api.openweathermap.org/data/2.5/weather?q=" + self.location + "&appid=06c921750b9a82d8f5d1294e1586276f"
+    def add(self, city=None):
 
-        # weather information;
-        json_data = requests.get(api).json()
-        self.condition = json_data['weather'][0]['main']
-        self.temp = int(json_data['main']['temp'] - 273.15)
-        self.min_temp = int(json_data['main']['temp_min'] - 273.15)
-        self.max_temp = int(json_data['main']['temp_max'] - 273.15)
-        self.pressure = json_data['main']['pressure']
-        self.humidity = json_data['main']['humidity']
-        self.wind = json_data['wind']['speed']
+        if city is not None:
+            location = city
+        else:
 
-        # reconnect into database;
-        conn = sqlite3.connect('HistoryDB.db')
-        cursor = conn.cursor()
+            location = self.loc_entry.get()
+        try:
+            self.api = "https://api.openweathermap.org/data/2.5/weather?q=" + location + "&appid=06c921750b9a82d8f5d1294e1586276f"
 
-        # insert into database;
-        cursor.execute("INSERT INTO search_history VALUES (:location)", {'location': self.loc_entry.get()})
+            # weather information;
+            json_data = requests.get(self.api).json()
+            self.condition = json_data['weather'][0]['main']
 
-        # clear entry box
-        self.loc_entry.delete(0, END)
+            self.temp = int(json_data['main']['temp'] - 273.15)
+            self.min_temp = int(json_data['main']['temp_min'] - 273.15)
+            self.max_temp = int(json_data['main']['temp_max'] - 273.15)
+            self.pressure = json_data['main']['pressure']
+            self.humidity = json_data['main']['humidity']
+            self.wind = json_data['wind']['speed']
 
-        # weather info to string
-        first_result = self.condition + "\n" + str(self.temp) + "°C"
-        second_results = "\n" + "Min Temp: " + str(self.min_temp) + "°C" + "\n" + "Max Temp: " + str(
-            self.max_temp) + "°C" + "\n" + "Pressure: " + str(self.pressure) + "\n" + "Humidity: " + str(
-            self.humidity) + "\n" + \
-                         "Wind Speed: " + str(self.wind)
 
-        # showing weather information on tkinter;
-        self.label1.config(text=first_result, font=b)
-        self.label2.config(text=second_results, font=a)
+            # weather info to string
+            self.first_result = self.condition + "\n" + str(self.temp) + "°C"
+            self.second_results = "\n" + "Min Temp: " + str(self.min_temp) + "°C" + "\n" + "Max Temp: " + str(
+                self.max_temp) + "°C" + "\n" + "Pressure: " + str(self.pressure) + "\n" + "Humidity: " + str(
+                self.humidity) + "\n" + \
+                             "Wind Speed: " + str(self.wind)
 
-        conn.commit()
-        conn.close()
+            # showing weather information on tkinter;
+            self.label1.config(text=self.first_result, font=b)
+            self.label2.config(text=self.second_results, font=a)
+
+            # reconnect into database;
+            conn = sqlite3.connect('HistoryDB.db')
+            cursor = conn.cursor()
+
+
+
+
+            # insert into database;
+            cursor.execute("INSERT INTO search_history VALUES (:location)", {'location': location})
+
+
+            # clear entry box
+            self.loc_entry.delete(0, END)
+
+            conn.commit()
+            conn.close()
+
+        except (AttributeError, KeyError):
+            # clear entry box
+            self.loc_entry.delete(0, END)
+
+            self.label1.config(text="Location does not exist :/", font=a)
+            self.label2.config(text=" ")
+
+            return "Location does not exist"
+
+
+        return self.first_result +"\n"+ self.second_results
 
     def PressedHistory(self):
         self.loc_entry.destroy()
@@ -83,46 +109,49 @@ class FirstPage(tk.Frame):
         self.label2.destroy()
         SecondPage(root)
 
-
 FirstPage(root)
-
-
 class SecondPage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.create_widgets()
-        self.show_widgets()
+        self.Show_widgets()
 
-    def create_widgets(self):
+    def History_Table(self):
         conn = sqlite3.connect('HistoryDB.db')
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM search_history")
         searches = cursor.fetchall()
-        search_list = []
-        for search in searches:
-            search_list.append(str(search[0]))
 
-        root.columnconfigure(0, weight=1)
-        root.rowconfigure(1, weight=1)
-        self.list_var = tk.StringVar(value=search_list)
-        self.List_box = tk.Listbox(root, listvariable=self.list_var, selectmode='extended')
-        self.scrollbar = Scrollbar(root, orient='vertical', command=self.List_box.yview)
-        self.clear_btn = Button(root, text='Clear History', command=self.clear, font=('Comic Sans MS', 12, "bold"))
-        self.return_btn = Button(root, text='<', command=self.back, font=("Comic Sans MS", 12, "bold"))
+        self.search_list = []
+        for search in searches:
+            self.search_list.append(str(search[0]))
 
         # close connection
         conn.commit()
         conn.close()
 
-    def show_widgets(self):
+        return self.search_list
+
+    def create_widgets(self):
+        root.columnconfigure(0, weight=1)
+        root.rowconfigure(1, weight=1)
+
+        self.search_list = self.History_Table()
+        self.list_var = tk.StringVar(value=self.search_list)
+        self.List_box = tk.Listbox(root, listvariable=self.list_var, selectmode='extended')
+        self.scrollbar = Scrollbar(root, orient='vertical', command=self.List_box.yview)
+        self.clear_btn = Button(root, text='Clear History', command=self.Clear_History, font=('Comic Sans MS', 12, "bold"))
+        self.Back_btn = Button(root, text='<', command=self.Back_to_FirstPage, font=("Comic Sans MS", 12, "bold"))
+
+    def Show_widgets(self):
         self.List_box.grid(row=1, column=0, sticky='nwes')
         self.scrollbar.grid(row=1, column=1, sticky='ns')
         self.clear_btn.grid(row=0, column=1, sticky='w', ipady=10)
-        self.return_btn.grid(row=0, column=0, ipady=10, sticky='w')
-        self.List_box.bind('<<ListboxSelect>>', self.onclick)
+        self.Back_btn.grid(row=0, column=0, ipady=10, sticky='w')
+        self.List_box.bind('<<ListboxSelect>>',self.When_city_in_History_is_clicked)
 
-    def clear(self):
+    def Clear_History(self):
         # reconnect into database
         conn = sqlite3.connect('HistoryDB.db')
         cursor = conn.cursor()
@@ -131,25 +160,33 @@ class SecondPage(tk.Frame):
 
         self.List_box.delete(0, END)  # clear listbox
 
+        # checking if deletion was successful
+        cursor.execute("""SELECT * FROM search_history""")
+        empty_History_list = cursor.fetchall()
+
         # close connection
         conn.commit()
         conn.close()
 
-    def back(self):
+        return empty_History_list
+
+    def Back_to_FirstPage(self):
         self.List_box.destroy()
         self.scrollbar.destroy()
         self.clear_btn.destroy()
-        self.return_btn.destroy()
+        self.Back_btn.destroy()
         FirstPage(root)
 
-    def onclick(self, event):
+    def When_city_in_History_is_clicked(self, event):
         self.selected_indices = self.List_box.curselection()  # get selected indices
         self.selected_word = ",".join([self.List_box.get(i) for i in self.selected_indices])  # get selected items
         self.List_box.destroy()
         self.scrollbar.destroy()
         self.clear_btn.destroy()
-        self.return_btn.destroy()
+        self.Back_btn.destroy()
         FirstPage(root, self.selected_word)
+
+        return self.selected_word
 
 
 root.mainloop()
