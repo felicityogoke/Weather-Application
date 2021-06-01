@@ -2,7 +2,7 @@ import sqlite3
 from tkinter import *
 import tkinter as tk
 import requests
-from tkinter.messagebox import showinfo
+
 
 '''Basic Tkinter Setup'''
 root = Tk()
