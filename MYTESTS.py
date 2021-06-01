@@ -19,10 +19,10 @@ def test_status_code_of_request_equals_200():
     assert response.status_code == 200
 
 
-def test_status_code_of_request_equals_205():
+def test_status_code_of_request_equals_404():
     response = requests.get(
         "https://api.openweathermap.org/data/2.5/weather?q=" + "Krems" + "&appid=06c921750b9a82d8f5d1294e1586276f")
-    assert response.status_code != 205
+    assert response.status_code != 404
 
 
 def test_if_history_table_in_database(cur):
@@ -50,7 +50,7 @@ def test_for_Upper_and_lower_Cases():
 def test_for_search_in_different_languages():
     F = FirstPage(root)
     assert F.Get_Weather_Info("Austria") == F.Get_Weather_Info("Österreich")
-    # assert F.add("Hokkaidō") == F.add("北海道")
+    #assert F.Get_Weather_Info("Hokkaidō") == F.Get_Weather_Info("北海道")
     assert F.Get_Weather_Info("Dalat") == F.Get_Weather_Info("Đà Lạt")
 
 
@@ -120,6 +120,15 @@ def test_if_a_search_changes_in_History():
     assert S.History_Table()[-1] != "VIENNA"
     assert S.History_Table()[-1] != "VIennA"
     assert S.History_Table()[-1] != "wien"
+
+def test_to_ensure_weather_info_is_not_empty():
+    api = "https://api.openweathermap.org/data/2.5/weather?q=" + "Krems" + "&appid=06c921750b9a82d8f5d1294e1586276f"
+
+    json_data = requests.get(api).json()
+
+    assert json_data["main"] != {}
+    assert json_data["wind"] != {}
+    assert json_data["weather"][0] != {}
 
 
 
