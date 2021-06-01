@@ -2,6 +2,7 @@ import sqlite3
 from tkinter import *
 import tkinter as tk
 import requests
+from tkinter.messagebox import showinfo
 
 '''Basic Tkinter Setup'''
 root = Tk()
@@ -21,10 +22,14 @@ class FirstPage(tk.Frame):
 
     def show_widgets(self):
         self.Show_btn.grid(row=0, column=1, sticky='w', pady=5)
-        self.label1.grid(row=2, column=0, sticky='ns', pady=0)
-        self.label2.grid(row=3, column=0, sticky='ns', pady=0)
         self.Search_btn.grid(row=1, column=1, pady=5, padx=5, ipady=10, sticky='nw')
         self.loc_entry.grid(row=1, column=0, padx=5, pady=5, ipady=20, sticky='nw')
+        self.label1.grid(row=2, column=0, sticky='ns', pady=0)
+        self.label2.grid(row=3, column=0, sticky='ns', pady=0)
+
+        if self.word != None:
+            self.loc_entry.delete(0, "end")
+            self.loc_entry.insert(0, self.word)
 
     def create_widgets(self):
         self.label1 = tk.Label(root, bg='#0099FF', font=b)
@@ -73,7 +78,8 @@ class FirstPage(tk.Frame):
 
             self.second_results = "\n" + "Min Temp: " + str(self.min_temp) + "°C" + "\n" + "Max Temp: " + str(
 
-                self.max_temp) + "°C" + "\n" + "Pressure: " + str(self.pressure) + "\n" + "Humidity: " + str(self.humidity) + "\n" + "Wind Speed: " + str(self.wind)
+                self.max_temp) + "°C" + "\n" + "Pressure: " + str(self.pressure) + "\n" + "Humidity: " + str(
+                self.humidity) + "\n" + "Wind Speed: " + str(self.wind)
 
             # RESULTS SHOULD BE RETURNED ON TKINTER SCREEN AS LABELS;
             self.label1.config(text=self.first_result, font=b)
@@ -115,18 +121,19 @@ class SecondPage(tk.Frame):
         self.create_widgets()
         self.Show_widgets()
 
-
     def create_widgets(self):
         root.columnconfigure(0, weight=1)
         root.rowconfigure(1, weight=1)
 
-        self.search_list = self.History_Table()     # history list will be shown on tkinter using a Listbox
+        self.search_list = self.History_Table()
         self.list_var = tk.StringVar(value=self.search_list)
-        
-        self.scrollbar = Scrollbar(root, orient='vertical', command=self.List_box.yview) 
-        self.Back_btn = Button(root, text='<', command=self.Back_to_FirstPage, font=("Comic Sans MS", 12, "bold"), bg= '#00CCFF')
-        self.clear_btn = Button(root, text='Clear History', command=self.Clear_History, font=('Comic Sans MS', 12, "bold"), bg='#00CCFF')
-        self.List_box = tk.Listbox(root, listvariable=self.list_var, selectmode='extended', bg="#00CCFF", height=10, font = ('Comic Sans MS', 18), selectforeground='White')
+
+
+        self.List_box = tk.Listbox(root, listvariable=self.list_var, selectmode='extended',bg="#00CCFF",height=10, font=('Comic Sans MS', 18),selectforeground='White')
+        self.scrollbar = Scrollbar(root, orient='vertical', command=self.List_box.yview)
+        self.clear_btn = Button(root, text='Clear History', command=self.Clear_History,
+                                font=('Comic Sans MS', 12, "bold"), bg='#00CCFF')
+        self.Back_btn = Button(root, text='<', command=self.Back_to_FirstPage, font=("Comic Sans MS", 12, "bold"),bg='#00CCFF')
 
     def Show_widgets(self):
         self.List_box.grid(row=1, column=0, sticky='nwes')
@@ -184,18 +191,21 @@ class SecondPage(tk.Frame):
         FirstPage(root)
 
     def When_city_in_History_is_clicked(self,event):
-
         # FUNCTION IS CALLED WHEN A USER CLICKS ON AN ITEM IN THE HISTORY TABLE,
-        # THEY ARE TAKEN BACK TO HOME PAGE AND SELECTED ITEM APPEARS IN SEARCH BOX
+        # THEY ARE TAKEN BACK TO HOME PAGE AND SELECTED ITEM APPEARS IN SEARCH BOX;
 
-        self.selected_indices = self.List_box.curselection()  # indices of selected items
-        self.selected_word = ",".join([self.List_box.get(i) for i in self.selected_indices])  # use indices to get item
+        self.selected_indices = self.List_box.curselection()  # get selected indices
+        self.selected_word = ",".join([self.List_box.get(i) for i in self.selected_indices])  # get selected items
 
-        self.Back_to_FirstPage()    # back to home page
-
-        FirstPage(root, self.selected_word)  # selected item ready for search
+        self.List_box.destroy()
+        self.scrollbar.destroy()
+        self.clear_btn.destroy()
+        self.Back_btn.destroy()
+        FirstPage(root, self.selected_word)
 
         return self.selected_word
+
+
 
 
 
